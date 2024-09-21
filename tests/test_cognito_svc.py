@@ -4,8 +4,8 @@ import pytest
 import requests
 from requests import JSONDecodeError
 
-from flask_cognito_lib.exceptions import CognitoError
-from flask_cognito_lib.services.cognito_svc import CognitoService
+from flask_cognito_lib_custom.exceptions import CognitoError
+from flask_cognito_lib_custom.services.cognito_svc import CognitoService
 
 
 def raise_exception(e):

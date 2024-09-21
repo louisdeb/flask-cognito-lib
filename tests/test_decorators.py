@@ -5,8 +5,11 @@ import pytest
 from cryptography.fernet import Fernet
 from flask import session
 
-from flask_cognito_lib.decorators import get_token_from_cookie, remove_from_session
-from flask_cognito_lib.exceptions import CognitoError, TokenVerifyError
+from flask_cognito_lib_custom.decorators import (
+    get_token_from_cookie,
+    remove_from_session,
+)
+from flask_cognito_lib_custom.exceptions import CognitoError, TokenVerifyError
 
 
 def test_remove_from_session(client):
@@ -23,14 +26,14 @@ def test_remove_from_session(client):
 def test_get_token_from_cookie(mocker):
     # Test when token is None
     mocker.patch(
-        "flask_cognito_lib.decorators.request.cookies.get",
+        "flask_cognito_lib_custom.decorators.request.cookies.get",
         return_value=None,
     )
     assert get_token_from_cookie("cookie_name") is None
 
     # Test when token is not None and cookie_name is not COOKIE_NAME_REFRESH
     mocker.patch(
-        "flask_cognito_lib.decorators.request.cookies.get",
+        "flask_cognito_lib_custom.decorators.request.cookies.get",
         return_value="token",
     )
     assert get_token_from_cookie("cookie_name") == "token"
@@ -41,7 +44,7 @@ def test_get_token_from_cookie_refresh(
 ):
     with client_with_cookie_refresh:
         mocker.patch(
-            "flask_cognito_lib.decorators.request.cookies.get",
+            "flask_cognito_lib_custom.decorators.request.cookies.get",
             return_value=refresh_token,
         )
 
@@ -57,7 +60,7 @@ def test_get_token_from_cookie_refresh_encrypted(
 ):
     with client_with_cookie_refresh_encrypted:
         mocker.patch(
-            "flask_cognito_lib.decorators.request.cookies.get",
+            "flask_cognito_lib_custom.decorators.request.cookies.get",
             return_value=refresh_token_encrypted,
         )
         assert get_token_from_cookie(cfg.COOKIE_NAME_REFRESH) == refresh_token
@@ -308,7 +311,7 @@ def test_cognito_logout_override(client_with_config_override, cfg_override):
 def test_cognito_logout_with_refresh_token(client_with_cookie_refresh, cfg, mocker):
     # Mock the refresh token revocation
     mocker.patch(
-        "flask_cognito_lib.decorators.cognito_auth.revoke_refresh_token",
+        "flask_cognito_lib_custom.decorators.cognito_auth.revoke_refresh_token",
     )
 
     # should 302 redirect to cognito
@@ -362,7 +365,7 @@ def test_auth_required_any_group_valid_group1(client_with_cookie, mocker):
     # Mock the token verfication to add an extra group for testing
     # valid groups are "editor" and "admin"
     mocker.patch(
-        "flask_cognito_lib.decorators.cognito_auth.verify_access_token",
+        "flask_cognito_lib_custom.decorators.cognito_auth.verify_access_token",
         return_value={"cognito:groups": ["editor", "another_group"]},
     )
 
@@ -376,7 +379,7 @@ def test_auth_required_any_group_valid_group2(client_with_cookie, mocker):
     # Mock the token verfication to add an extra group for testing
     # valid groups are "editor" and "admin"
     mocker.patch(
-        "flask_cognito_lib.decorators.cognito_auth.verify_access_token",
+        "flask_cognito_lib_custom.decorators.cognito_auth.verify_access_token",
         return_value={"cognito:groups": ["admin", "group2"]},
     )
 
@@ -390,7 +393,7 @@ def test_auth_required_any_group_invalid(client_with_cookie, mocker):
     # Mock the token verfication to add an extra group for testing
     # valid groups are "editor" and "admin"
     mocker.patch(
-        "flask_cognito_lib.decorators.cognito_auth.verify_access_token",
+        "flask_cognito_lib_custom.decorators.cognito_auth.verify_access_token",
         return_value={"cognito:groups": ["group1", "group2"]},
     )
 

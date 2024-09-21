@@ -1,6 +1,6 @@
 [tool.poetry]
-name = "flask_cognito_lib"
-version = "1.8.2"
+name = "flask_cognito_lib_custom"
+version = "1.8.2rc0"
 description = "A Flask extension that supports protecting routes with AWS Cognito following OAuth 2.1 best practices"
 license = "MIT"
 authors = ["mblackgeo <18327836+mblackgeo@users.noreply.github.com>"]
@@ -22,7 +22,7 @@ classifiers = [
     "Typing :: Typed",
 ]
 packages = [
-    { include = "flask_cognito_lib", from = "src"}
+    { include = "flask_cognito_lib_custom", from = "src"}
 ]
 
 [tool.poetry.dependencies]
@@ -73,12 +73,12 @@ exclude = '''
 profile = "black"
 multi_line_output = 3
 line_length = 88
-known_first_party = ["flask_cognito_lib"]
+known_first_party = ["flask_cognito_lib_custom"]
 
 
 [tool.semantic_release]
 version_variable = [
-    "src/flask_cognito_lib/__init__.py:__version__"
+    "src/flask_cognito_lib_custom/__init__.py:__version__"
 ]
 version_toml = [
     "pyproject.toml:tool.poetry.version"

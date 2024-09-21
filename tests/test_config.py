@@ -1,7 +1,7 @@
 import pytest
 
-from flask_cognito_lib.config import get
-from flask_cognito_lib.exceptions import ConfigurationError
+from flask_cognito_lib_custom.config import get
+from flask_cognito_lib_custom.exceptions import ConfigurationError
 
 
 def test_get_default():

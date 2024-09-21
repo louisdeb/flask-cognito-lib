@@ -2,16 +2,16 @@ import pytest
 from flask import Flask, make_response
 from jwt import PyJWKSet
 
-from flask_cognito_lib import CognitoAuth
-from flask_cognito_lib.config import Config
-from flask_cognito_lib.decorators import (
+from flask_cognito_lib_custom import CognitoAuth
+from flask_cognito_lib_custom.config import Config
+from flask_cognito_lib_custom.decorators import (
     auth_required,
     cognito_login,
     cognito_login_callback,
     cognito_logout,
     cognito_refresh_callback,
 )
-from flask_cognito_lib.utils import CognitoTokenResponse
+from flask_cognito_lib_custom.utils import CognitoTokenResponse
 
 
 @pytest.fixture(autouse=True)
@@ -189,7 +189,7 @@ def refresh_token_encrypted():
 @pytest.fixture(autouse=False)
 def token_response(mocker, access_token, id_token, refresh_token):
     mocker.patch(
-        "flask_cognito_lib.plugin.CognitoAuth.get_tokens",
+        "flask_cognito_lib_custom.plugin.CognitoAuth.get_tokens",
         return_value=CognitoTokenResponse(
             access_token=access_token,
             id_token=id_token,
@@ -201,7 +201,7 @@ def token_response(mocker, access_token, id_token, refresh_token):
 @pytest.fixture(autouse=False)
 def refresh_token_response(mocker, access_token, id_token, refresh_token):
     mocker.patch(
-        "flask_cognito_lib.plugin.CognitoAuth.exchange_refresh_token",
+        "flask_cognito_lib_custom.plugin.CognitoAuth.exchange_refresh_token",
         return_value=CognitoTokenResponse(
             access_token=access_token,
             id_token=id_token,

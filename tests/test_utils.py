@@ -1,4 +1,7 @@
-from flask_cognito_lib.utils import generate_code_challenge, generate_code_verifier
+from flask_cognito_lib_custom.utils import (
+    generate_code_challenge,
+    generate_code_verifier,
+)
 
 
 def test_generate_code_challenge():

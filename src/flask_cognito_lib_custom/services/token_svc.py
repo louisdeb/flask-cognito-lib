@@ -7,8 +7,8 @@ import jwt
 from cryptography.fernet import Fernet, InvalidToken
 from jwt import PyJWK, PyJWKClient, PyJWKClientError
 
-from flask_cognito_lib.config import Config
-from flask_cognito_lib.exceptions import CognitoError, TokenVerifyError
+from flask_cognito_lib_custom.config import Config
+from flask_cognito_lib_custom.exceptions import CognitoError, TokenVerifyError
 
 
 class TokenService:

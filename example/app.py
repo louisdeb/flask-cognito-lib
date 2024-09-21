@@ -1,17 +1,20 @@
+import json
 from os import environ, path, urandom
 
+import requests
 from dotenv import load_dotenv
 from flask import Flask, jsonify, redirect, session, url_for
 
-from flask_cognito_lib import CognitoAuth
-from flask_cognito_lib.decorators import (
+from flask_cognito_lib_custom import CognitoAuth
+from flask_cognito_lib_custom.decorators import (
     auth_required,
+    cognito_custom_login,
+    cognito_custom_login_callback,
     cognito_login,
-    cognito_login_callback,
     cognito_logout,
     cognito_refresh_callback,
 )
-from flask_cognito_lib.exceptions import (
+from flask_cognito_lib_custom.exceptions import (
     AuthorisationRequiredError,
     CognitoGroupRequiredError,
 )
@@ -47,6 +50,10 @@ class Config:
         "AWS_COGNITO_REFRESH_COOKIE_AGE_SECONDS"
     ]
 
+    COGNITO_USER_USERNAME = environ["COGNITO_USER_USERNAME"]
+    COGNITO_USER_PASSWORD = environ["COGNITO_USER_PASSWORD"]
+    LOGIN_LAMBDA_URL = environ["LOGIN_LAMBDA_URL"]
+
 
 app = Flask(__name__)
 app.config.from_object(Config)
@@ -72,8 +79,44 @@ def login():
     pass
 
 
+@app.route("/sendlogin")
+@cognito_custom_login
+def sendlogin(*args, **kwargs):
+    data = {
+        "username": app.config.get("COGNITO_USER_USERNAME"),
+        "password": app.config.get("COGNITO_USER_PASSWORD"),
+        "client_id": app.config.get("AWS_COGNITO_USER_POOL_CLIENT_ID"),
+        "user_pool_id": app.config.get("AWS_COGNITO_USER_POOL_ID"),
+        "state": kwargs["state"],
+        "scopes": kwargs["scopes"],
+    }
+
+    url = app.config.get("LOGIN_LAMBDA_URL")
+    auth_result = requests.post(url, json=data)
+
+    if auth_result:
+        print("Login successful!")
+    else:
+        print("Login failed!")
+        return redirect(url_for("home"))
+
+    auth_result = json.loads(auth_result.text)
+
+    return redirect(
+        url_for(
+            "postlogin",
+            state=auth_result["state"],
+            access_token=auth_result["AccessToken"],
+            token_type=auth_result["TokenType"],
+            expires_in=auth_result["ExpiresIn"],
+            refresh_token=auth_result["RefreshToken"],
+            id_token=auth_result["IdToken"],
+        )
+    )
+
+
 @app.route("/postlogin")
-@cognito_login_callback
+@cognito_custom_login_callback
 def postlogin():
     # A route to handle the redirect after a user has logged in with Cognito.
     # This route must be set as one of the User Pool client's Callback URLs in

@@ -4,9 +4,9 @@ from urllib.parse import quote
 import requests
 from requests import JSONDecodeError, Response
 
-from flask_cognito_lib.config import Config
-from flask_cognito_lib.exceptions import CognitoError
-from flask_cognito_lib.utils import CognitoTokenResponse
+from flask_cognito_lib_custom.config import Config
+from flask_cognito_lib_custom.exceptions import CognitoError
+from flask_cognito_lib_custom.utils import CognitoTokenResponse
 
 
 class CognitoService:

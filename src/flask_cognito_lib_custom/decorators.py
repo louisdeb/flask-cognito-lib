@@ -6,15 +6,15 @@ from flask import current_app as app
 from flask import redirect, request, session
 from werkzeug.local import LocalProxy
 
-from flask_cognito_lib.config import Config
-from flask_cognito_lib.exceptions import (
+from flask_cognito_lib_custom.config import Config
+from flask_cognito_lib_custom.exceptions import (
     AuthorisationRequiredError,
     CognitoError,
     CognitoGroupRequiredError,
     TokenVerifyError,
 )
-from flask_cognito_lib.plugin import CognitoAuth
-from flask_cognito_lib.utils import (
+from flask_cognito_lib_custom.plugin import CognitoAuth
+from flask_cognito_lib_custom.utils import (
     CognitoTokenResponse,
     generate_code_challenge,
     generate_code_verifier,
@@ -46,6 +46,21 @@ def validate_and_store_tokens(
     )
     session.update({"claims": claims})
 
+    # Grab the user info from the user endpoint and store in the session
+    if tokens.id_token is not None:
+        user_info = cognito_auth.verify_id_token(
+            token=tokens.id_token,
+            nonce=nonce,
+            leeway=cognito_auth.cfg.cognito_expiration_leeway,
+        )
+        session.update({"user_info": user_info})
+
+
+def store_tokens(
+    tokens: CognitoTokenResponse,
+    nonce: Optional[str] = None,
+) -> None:
+    """Validate and store the access token and ID token (if present) in the session"""
     # Grab the user info from the user endpoint and store in the session
     if tokens.id_token is not None:
         user_info = cognito_auth.verify_id_token(
@@ -133,6 +148,45 @@ def cognito_login(fn):
     return wrapper
 
 
+def cognito_custom_login(fn):
+    """
+    Wrap a function that calls a Cognito custom auth flow.
+    """
+
+    @wraps(fn)
+    def wrapper(*args, **kwargs):
+        with app.app_context():
+            # store parameters in the session that are passed to Cognito
+            # and required for JWT verification
+            code_verifier = generate_code_verifier()
+            cognito_session = {
+                "code_verifier": code_verifier,
+                "code_challenge": generate_code_challenge(code_verifier),
+                "nonce": secure_random(),
+            }
+            session.update(cognito_session)
+
+            # Add suport for custom state values which are appended to a secure
+            # random value for additional CRSF protection
+            state = secure_random()
+            custom_state = session.get("state")
+            if custom_state:
+                state += f"__{custom_state}"
+
+            session.update({"state": state})
+
+            extra_kwargs = {
+                "state": session["state"],
+                "scopes": cognito_auth.cfg.cognito_scopes,
+            }
+
+            resp = fn(*args, **{**kwargs, **extra_kwargs})
+
+        return resp
+
+    return wrapper
+
+
 def cognito_login_callback(fn):
     """
     A decorator to wrap the redirect after a user has logged in with Cognito.
@@ -157,6 +211,66 @@ def cognito_login_callback(fn):
 
             # Store the tokens in the session
             validate_and_store_tokens(tokens=tokens, nonce=nonce)
+
+            # Remove one-time use variables now we have completed the auth flow
+            remove_from_session(("code_challenge", "code_verifier", "nonce"))
+
+            # split out the random part of the state value (in case the user
+            # specified their own custom state value)
+            state = session.get("state").split("__")[-1]
+            session.update({"state": state})
+
+            # return and set the JWT as a http only cookie
+            resp = fn(*args, **kwargs)
+
+            # Store the access token in a HTTP only secure cookie
+            store_token_in_cookie(
+                resp=resp,
+                token=tokens.access_token,
+                cookie_name=cognito_auth.cfg.COOKIE_NAME,
+                max_age=cognito_auth.cfg.max_cookie_age_seconds,
+            )
+
+            # Grab the refresh token and store in a HTTP only secure cookie
+            if cognito_auth.cfg.refresh_flow_enabled and tokens.refresh_token:
+                store_token_in_cookie(
+                    resp=resp,
+                    token=tokens.refresh_token,
+                    cookie_name=cognito_auth.cfg.COOKIE_NAME_REFRESH,
+                    max_age=cognito_auth.cfg.max_refresh_cookie_age_seconds,
+                    encrypt=cognito_auth.cfg.refresh_cookie_encrypted,
+                )
+
+        return resp
+
+    return wrapper
+
+
+def cognito_custom_login_callback(fn):
+    """
+    Because we can't use OAuth2 with a custom UI, we authenticate the user
+    using a simple USER_PASSWORD_AUTH. We still check for state and nonce
+    values, but no longer use any code verification techniques.
+    """
+
+    @wraps(fn)
+    def wrapper(*args, **kwargs):
+        with app.app_context():
+            # confirm returned state is correct
+            if session["state"] != request.args["state"]:
+                raise CognitoError("State for CSRF is not correct")
+
+            # extract tokens
+            tokens = CognitoTokenResponse(
+                access_token=request.args["access_token"],
+                token_type=request.args["token_type"],
+                expires_in=request.args["expires_in"],
+                refresh_token=request.args["refresh_token"],
+                id_token=request.args["id_token"],
+            )
+
+            # Store the tokens in the session
+            store_tokens(tokens=tokens)
 
             # Remove one-time use variables now we have completed the auth flow
             remove_from_session(("code_challenge", "code_verifier", "nonce"))

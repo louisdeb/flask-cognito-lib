@@ -165,7 +165,9 @@ class Config:
     @property
     def issuer(self) -> str:
         """Return the issuer"""
-        return f"https://cognito-idp.{self.region}.amazonaws.com/{self.user_pool_id}"
+        return (
+            "https:" + f"//cognito-idp.{self.region}.amazonaws.com/{self.user_pool_id}"
+        )
 
     @property
     def jwk_endpoint(self) -> str:

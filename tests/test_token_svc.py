@@ -1,7 +1,7 @@
 import pytest
 
-from flask_cognito_lib.exceptions import CognitoError, TokenVerifyError
-from flask_cognito_lib.services.token_svc import TokenService
+from flask_cognito_lib_custom.exceptions import CognitoError, TokenVerifyError
+from flask_cognito_lib_custom.services.token_svc import TokenService
 
 
 def test_verify_no_access_token(cfg):

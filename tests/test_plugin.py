@@ -1,8 +1,8 @@
 import pytest
 from flask import Flask
 
-from flask_cognito_lib import CognitoAuth
-from flask_cognito_lib.exceptions import CognitoError
+from flask_cognito_lib_custom import CognitoAuth
+from flask_cognito_lib_custom.exceptions import CognitoError
 
 
 def test_plugin_init(cfg):
