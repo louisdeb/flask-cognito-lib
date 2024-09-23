@@ -373,6 +373,35 @@ def cognito_logout(fn):
     return wrapper
 
 
+def cognito_custom_logout(fn):
+    """A decorator that handles logging out with Cognito"""
+
+    @wraps(fn)
+    def wrapper(*args, **kwargs):
+        with app.app_context():
+            # remove the cookies
+            resp = redirect(app.config.get("AWS_COGNITO_LOGOUT_URL"))
+            resp.delete_cookie(
+                key=cognito_auth.cfg.COOKIE_NAME, domain=cognito_auth.cfg.cookie_domain
+            )
+
+            # Revoke the refresh token if it exists
+            if refresh_token := get_token_from_cookie(
+                cognito_auth.cfg.COOKIE_NAME_REFRESH
+            ):
+                cognito_auth.revoke_refresh_token(refresh_token)
+                resp.delete_cookie(
+                    key=cognito_auth.cfg.COOKIE_NAME_REFRESH,
+                    domain=cognito_auth.cfg.cookie_domain,
+                )
+
+        # Cognito will redirect to the sign-out URL (if set) or else use
+        # the callback URL
+        return resp
+
+    return wrapper
+
+
 def auth_required(groups: Optional[Iterable[str]] = None, any_group: bool = False):
     """A decorator to protect a route with AWS Cognito"""
 

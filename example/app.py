@@ -10,8 +10,8 @@ from flask_cognito_lib_custom.decorators import (
     auth_required,
     cognito_custom_login,
     cognito_custom_login_callback,
+    cognito_custom_logout,
     cognito_login,
-    cognito_logout,
     cognito_refresh_callback,
 )
 from flask_cognito_lib_custom.exceptions import (
@@ -32,8 +32,7 @@ class Config:
     FLASK_APP = "TEST_APP"
     FLASK_ENV = "TESTING"
 
-    # Cognito config
-    # AWS_COGNITO_DISABLED = True  # Can set to turn off auth (e.g. for local testing)
+    # Cognito Config
     AWS_REGION = environ["AWS_REGION"]
     AWS_COGNITO_USER_POOL_ID = environ["AWS_COGNITO_USER_POOL_ID"]
     AWS_COGNITO_DOMAIN = environ["AWS_COGNITO_DOMAIN"]
@@ -151,7 +150,7 @@ def claims():
     # This route is protected by the Cognito authorisation. If the user is not
     # logged in at this point or their token from Cognito is no longer valid
     # a 401 Authentication Error is thrown, which is caught by the
-    # `auth_error_handler` a redirected to the Hosted UI to login.
+    # `auth_error_handler` and redirected to the Hosted UI to login.
     # If their auth is valid, the current session will be shown including
     # their claims and user_info extracted from the Cognito tokens.
     return jsonify(session)
@@ -196,7 +195,7 @@ def missing_group_error_handler(err):
 
 
 @app.route("/logout")
-@cognito_logout
+@cognito_custom_logout
 def logout():
     # Logout of the Cognito User pool and delete the cookies that were set
     # on login.
