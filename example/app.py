@@ -12,6 +12,7 @@ from flask_cognito_lib_custom.decorators import (
     cognito_custom_login_callback,
     cognito_custom_logout,
     cognito_login,
+    cognito_no_auth_only,
     cognito_refresh_callback,
 )
 from flask_cognito_lib_custom.exceptions import (
@@ -48,6 +49,9 @@ class Config:
     AWS_COGNITO_REFRESH_COOKIE_AGE_SECONDS = environ[
         "AWS_COGNITO_REFRESH_COOKIE_AGE_SECONDS"
     ]
+    AWS_COGNITO_ALREADY_AUTH_REDIRECT_URL = environ[
+        "AWS_COGNITO_ALREADY_AUTH_REDIRECT_URL"
+    ]
 
     COGNITO_USER_USERNAME = environ["COGNITO_USER_USERNAME"]
     COGNITO_USER_PASSWORD = environ["COGNITO_USER_PASSWORD"]
@@ -62,6 +66,12 @@ auth = CognitoAuth(app)
 @app.route("/")
 def home():
     return "Hello world!"
+
+
+@app.route("/noauth")
+@cognito_no_auth_only
+def noauth():
+    return "Only non-signed in users can see this page."
 
 
 @app.route("/login")

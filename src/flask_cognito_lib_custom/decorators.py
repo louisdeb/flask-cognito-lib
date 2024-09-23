@@ -111,6 +111,41 @@ def get_token_from_cookie(cookie_name: str) -> Union[str, None]:
     return token
 
 
+def cognito_no_auth_only(fn):
+    """
+    A decorator that ensures the user is not authenticated before accessing the
+    route. Otherwise the user is redirected to AWS_COGNITO_ALREADY_AUTH_REDIRECT_URL.
+    """
+
+    @wraps(fn)
+    def wrapper(*args, **kwargs):
+        with app.app_context():
+            # return early if the extension is disabled
+            if cognito_auth.cfg.disabled:
+                return fn(*args, **kwargs)
+
+            # Try and validate the access token stored in the cookie
+            try:
+                access_token = request.cookies.get(cognito_auth.cfg.COOKIE_NAME)
+                cognito_auth.verify_access_token(
+                    token=access_token,
+                    leeway=cognito_auth.cfg.cognito_expiration_leeway,
+                )
+                valid = True
+
+            except (TokenVerifyError, KeyError):
+                valid = False
+
+            if not valid:
+                resp = fn(*args, **kwargs)
+            else:
+                resp = redirect(cognito_auth.cfg.already_auth_url)
+
+        return resp
+
+    return wrapper
+
+
 def cognito_login(fn):
     """A decorator that redirects to the Cognito hosted UI"""
 

@@ -155,6 +155,11 @@ class Config:
         )
 
     @property
+    def already_auth_url(self) -> str:
+        """Return the redirect url for attempts to access a non-auth only route"""
+        return get("AWS_COGNITO_ALREADY_AUTH_REDIRECT_URL", required=True)
+
+    @property
     def secret_key(self) -> bytes:
         """Return Flask secret key"""
         key = get("SECRET_KEY", required=True)
