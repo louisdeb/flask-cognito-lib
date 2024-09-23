@@ -238,6 +238,6 @@ class TokenService:
             If the token cannot be decrypted
         """
         try:
-            return self.fernet.decrypt(token.encode()).decode()
+            return self.fernet.decrypt(token.encode("utf-8")).decode("utf-8")
         except InvalidToken as err:
             raise CognitoError("Error decrypting token") from err
